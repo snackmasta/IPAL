@@ -52,12 +52,14 @@ class SCADAIPALHMI(tk.Tk):
         status_frame.pack(fill='x', padx=5, pady=2)
         self.status_label = ttk.Label(status_frame, text="SYSTEM STOPPED", font=("Arial", 18, "bold"), foreground="blue")
         self.status_label.pack(side='left', padx=10)
-        ttk.Button(status_frame, text="START", command=self.start_system).pack(side='left', padx=2)
-        ttk.Button(status_frame, text="STOP", command=self.stop_system).pack(side='left', padx=2)
-        self.estop_btn = ttk.Button(status_frame, text="E-STOP", command=self.estop_system)
+        self.start_btn = tk.Button(status_frame, text="START", command=self.start_system, bg="#4CAF50", fg="white", activebackground="#388E3C", activeforeground="white", font=("Arial", 10, "bold"))
+        self.start_btn.pack(side='left', padx=2)
+        self.stop_btn = tk.Button(status_frame, text="STOP", command=self.stop_system, bg="#E53935", fg="white", activebackground="#B71C1C", activeforeground="white", font=("Arial", 10, "bold"))
+        self.stop_btn.pack(side='left', padx=2)
+        self.estop_btn = tk.Button(status_frame, text="E-STOP", command=self.estop_system, bg="#FFA000", fg="white", activebackground="#FF6F00", activeforeground="white", font=("Arial", 10, "bold"))
         self.estop_btn.pack(side='left', padx=2)
-        self.prod_label = ttk.Label(status_frame, text="Production Rate: 0.0 L/min | Total Produced: 0 L | Efficiency: 0.0%", font=("Arial", 10))
-        self.prod_label.pack(side='left', padx=20)
+        # self.prod_label = ttk.Label(status_frame, text="Production Rate: 0.0 L/min | Total Produced: 0 L | Efficiency: 0.0%", font=("Arial", 10))
+        # self.prod_label.pack(side='left', padx=20)
         self.emergency_active = False
 
         # Main Panel
@@ -271,7 +273,7 @@ class SCADAIPALHMI(tk.Tk):
         self.status_label.config(text="EMERGENCY STOP", foreground="red")
         self.system_running = False
         self.emergency_active = True
-        self.estop_btn.config(text="RESET", command=self.reset_emergency)
+        self.estop_btn.config(text="RESET", command=self.reset_emergency, bg="#1976D2", activebackground="#0D47A1")
         alarms.append("[ALARM] Emergency Stop diaktifkan!")
 
     def normal_demo(self):
@@ -285,7 +287,7 @@ class SCADAIPALHMI(tk.Tk):
     def reset_emergency(self):
         self.emergency_active = False
         self.status_label.config(text="SYSTEM STOPPED", foreground="blue")
-        self.estop_btn.config(text="E-STOP", command=self.estop_system)
+        self.estop_btn.config(text="E-STOP", command=self.estop_system, bg="#FFA000", activebackground="#FF6F00")
         alarms.append("[LOG] Emergency Stop dicabut. Sistem kembali ke posisi STOPPED.")
 
     def on_closing(self):
