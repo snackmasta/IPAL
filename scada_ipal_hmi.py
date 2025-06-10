@@ -54,9 +54,11 @@ class SCADAIPALHMI(tk.Tk):
         self.status_label.pack(side='left', padx=10)
         ttk.Button(status_frame, text="START", command=self.start_system).pack(side='left', padx=2)
         ttk.Button(status_frame, text="STOP", command=self.stop_system).pack(side='left', padx=2)
-        ttk.Button(status_frame, text="E-STOP", command=self.estop_system).pack(side='left', padx=2)
+        self.estop_btn = ttk.Button(status_frame, text="E-STOP", command=self.estop_system)
+        self.estop_btn.pack(side='left', padx=2)
         self.prod_label = ttk.Label(status_frame, text="Production Rate: 0.0 L/min | Total Produced: 0 L | Efficiency: 0.0%", font=("Arial", 10))
         self.prod_label.pack(side='left', padx=20)
+        self.emergency_active = False
 
         # Main Panel
         main_frame = ttk.Frame(self)
@@ -67,15 +69,23 @@ class SCADAIPALHMI(tk.Tk):
         comp_frame.grid(row=0, column=0, sticky='nw', padx=5, pady=5)
         self.pump_vars = {}
         pumps = ['Inlet', 'Transfer', 'Blower', 'Dosing', 'Lumpur', 'Buang']
+        pump_labels = {
+            'Inlet': 'Pompa Inlet',
+            'Transfer': 'Pompa Transfer',
+            'Blower': 'Pompa Blower',
+            'Dosing': 'Pompa Dosing',
+            'Lumpur': 'Pompa Lumpur',
+            'Buang': 'Pompa Buang',
+        }
         for i, p in enumerate(pumps):
             var = tk.StringVar(value="OFF")
             self.pump_vars[p] = var
-            ttk.Label(comp_frame, text=f"{p} Pump:").grid(row=i, column=0, sticky='e')
+            ttk.Label(comp_frame, text=f"{pump_labels[p]}:").grid(row=i, column=0, sticky='e')
             ttk.Label(comp_frame, textvariable=var, width=6, background='#e0e0e0').grid(row=i, column=1, sticky='w')
-        ttk.Label(comp_frame, text="Ground Tank:").grid(row=7, column=0, sticky='e')
+        ttk.Label(comp_frame, text="Bak Penampung Awal:").grid(row=7, column=0, sticky='e')
         self.ground_tank = ttk.Progressbar(comp_frame, length=100, maximum=100)
         self.ground_tank.grid(row=7, column=1, sticky='w')
-        ttk.Label(comp_frame, text="Effluent Tank:").grid(row=8, column=0, sticky='e')
+        ttk.Label(comp_frame, text="Bak Akhir:").grid(row=8, column=0, sticky='e')
         self.eff_tank = ttk.Progressbar(comp_frame, length=100, maximum=100)
         self.eff_tank.grid(row=8, column=1, sticky='w')
 
@@ -89,16 +99,17 @@ class SCADAIPALHMI(tk.Tk):
         data_frame = ttk.LabelFrame(main_frame, text="Process Data", width=200)
         data_frame.grid(row=0, column=2, sticky='nw', padx=5, pady=5)
         self.data_vars = {}
-        for i, (k, label) in enumerate([
-            ('level', 'Level Bak Penampung'),
+        data_labels = [
+            ('level', 'Level Bak Penampung Awal'),
             ('do', 'DO (mg/L)'),
             ('ph', 'pH'),
             ('suhu', 'Suhu (°C)'),
-            ('lumpur', 'Lumpur'),
-            ('chemical', 'Chemical'),
-            ('sludge', 'Sludge'),
-            ('penampung', 'Bak Akhir'),
-        ]):
+            ('lumpur', 'Kadar Lumpur'),
+            ('chemical', 'Kadar Disinfektan'),
+            ('sludge', 'Volume Lumpur'),
+            ('penampung', 'Level Bak Akhir'),
+        ]
+        for i, (k, label) in enumerate(data_labels):
             ttk.Label(data_frame, text=label+':').grid(row=i, column=0, sticky='e')
             var = tk.StringVar()
             ttk.Label(data_frame, textvariable=var, width=10, background='#f0f0f0').grid(row=i, column=1, sticky='w')
@@ -141,13 +152,19 @@ class SCADAIPALHMI(tk.Tk):
                 self.data_vars[k].set(f"{val:.2f}")
             else:
                 self.data_vars[k].set(str(val))
-        # Update pompa
-        self.pump_vars['Inlet'].set("ON" if state['level'] > LEVEL_MIN else "OFF")
-        self.pump_vars['Transfer'].set("ON" if state['level'] > LEVEL_MAX else "OFF")
-        self.pump_vars['Blower'].set("ON" if state['do'] < DO_SETPOINT else "OFF")
-        self.pump_vars['Dosing'].set("ON" if not (PH_MIN <= state['ph'] <= PH_MAX) else "OFF")
-        self.pump_vars['Lumpur'].set("ON" if state['lumpur'] > LUMPUR_MAX else "OFF")
-        self.pump_vars['Buang'].set("ON" if state['penampung'] > 90 else "OFF")
+        # Update pompa sesuai flowchart
+        # Pompa Inlet hanya ON jika level >= LEVEL_MIN dan <= LEVEL_MAX dan sistem RUNNING
+        if getattr(self, 'system_running', False) and not state['manual']:
+            self.pump_vars['Inlet'].set("ON" if state['level'] >= LEVEL_MIN and state['level'] <= LEVEL_MAX else "OFF")
+            self.pump_vars['Transfer'].set("ON" if state['level'] > LEVEL_MAX else "OFF")
+            self.pump_vars['Blower'].set("ON" if state['do'] < DO_SETPOINT else "OFF")
+            self.pump_vars['Dosing'].set("ON" if not (PH_MIN <= state['ph'] <= PH_MAX) else "OFF")
+            self.pump_vars['Lumpur'].set("ON" if state['lumpur'] > LUMPUR_MAX else "OFF")
+            self.pump_vars['Buang'].set("ON" if state['penampung'] > 90 else "OFF")
+        else:
+            # Jika sistem tidak running atau manual, semua OFF
+            for k in self.pump_vars:
+                self.pump_vars[k].set("OFF")
         # Update alarm
         self.alarm_box.delete(1.0, tk.END)
         for a in alarms[-10:]:
@@ -193,15 +210,21 @@ class SCADAIPALHMI(tk.Tk):
         for k in state:
             if isinstance(state[k], (int, float)):
                 state[k] = max(0, state[k])
-        # Logika kendali
+
+        # Logika kendali sesuai flowchart
+        # 1. Pompa Inlet
         if state['level'] < LEVEL_MIN:
             alarms.append("[LOG] Matikan pompa inlet (level rendah)")
+            # Pompa Inlet OFF, tidak ada aksi lain
             return
+        # 2. Pompa Transfer
         if state['level'] > LEVEL_MAX:
             alarms.append("[LOG] Transfer ke bak pemisah lumpur")
             if random.random() < 0.1:
                 alarms.append("[ALARM] Overload bak pemisah lumpur! Transfer dihentikan.")
+                # Transfer dihentikan jika overload
                 return
+        # 3. Unit Biologis: Pantau DO, pH, Suhu
         if state['do'] < DO_SETPOINT:
             alarms.append("[LOG] Aktifkan blower/aerator (DO rendah)")
             state['do'] += 0.5
@@ -210,23 +233,31 @@ class SCADAIPALHMI(tk.Tk):
             state['ph'] = 7.0
         if not (SUHU_MIN <= state['suhu'] <= SUHU_MAX):
             alarms.append("[ALARM] Suhu di luar rentang operasional!")
+        # 4. Pengendapan & Lumpur
         if state['lumpur'] > LUMPUR_MAX:
             alarms.append("[LOG] Pompa lumpur ke pengolahan lumpur")
             state['lumpur'] -= 10
             state['sludge'] += 10
+        # 5. Disinfeksi & Chemical
         if state['chemical'] < CHEMICAL_MIN:
             alarms.append("[ALARM] Stok disinfektan habis!")
             state['chemical'] += 20
+        # 6. Bak Penampung Akhir
         if state['penampung'] > 90:
             alarms.append("[LOG] Aktifkan pompa buang/recirculation")
             state['penampung'] -= 30
+        # 7. Pengolahan Lumpur
         if state['sludge'] > SLUDGE_SETPOINT:
             alarms.append("[LOG] Proses pengeringan/stabilisasi lumpur")
             state['sludge'] -= 20
+        # 8. Alarm acak
         if random.random() < 0.05:
             alarms.append("[ALARM] Terjadi gangguan sistem! Logging alarm.")
 
     def start_system(self):
+        if getattr(self, 'emergency_active', False):
+            alarms.append("[ALARM] Tidak dapat menyalakan sistem saat EMERGENCY aktif!")
+            return
         self.status_label.config(text="SYSTEM RUNNING", foreground="green")
         self.system_running = True
         alarms.append("[LOG] Sistem dijalankan.")
@@ -239,6 +270,8 @@ class SCADAIPALHMI(tk.Tk):
     def estop_system(self):
         self.status_label.config(text="EMERGENCY STOP", foreground="red")
         self.system_running = False
+        self.emergency_active = True
+        self.estop_btn.config(text="RESET", command=self.reset_emergency)
         alarms.append("[ALARM] Emergency Stop diaktifkan!")
 
     def normal_demo(self):
@@ -248,6 +281,12 @@ class SCADAIPALHMI(tk.Tk):
     def stop_demo(self):
         self.stop_system()
         alarms.append("[LOG] Demo dihentikan.")
+
+    def reset_emergency(self):
+        self.emergency_active = False
+        self.status_label.config(text="SYSTEM STOPPED", foreground="blue")
+        self.estop_btn.config(text="E-STOP", command=self.estop_system)
+        alarms.append("[LOG] Emergency Stop dicabut. Sistem kembali ke posisi STOPPED.")
 
     def on_closing(self):
         self.running = False
