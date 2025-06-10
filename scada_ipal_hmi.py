@@ -50,8 +50,9 @@ class SCADAIPALHMI(tk.Tk):
         # Status Bar
         status_frame = ttk.Frame(self)
         status_frame.pack(fill='x', padx=5, pady=2)
-        self.status_label = ttk.Label(status_frame, text="SYSTEM STOPPED", font=("Arial", 18, "bold"), foreground="blue")
-        self.status_label.pack(side='left', padx=10)
+        # Indicator Lamp for System Status
+        self.status_indicator = tk.Label(status_frame, text="STOPPED", font=("Arial", 14, "bold"), width=12, relief="groove", bg="#BDBDBD", fg="black")
+        self.status_indicator.pack(side='left', padx=10, pady=2)
         self.start_btn = tk.Button(status_frame, text="START", command=self.start_system, bg="#4CAF50", fg="white", activebackground="#388E3C", activeforeground="white", font=("Arial", 10, "bold"))
         self.start_btn.pack(side='left', padx=2)
         self.stop_btn = tk.Button(status_frame, text="STOP", command=self.stop_system, bg="#E53935", fg="white", activebackground="#B71C1C", activeforeground="white", font=("Arial", 10, "bold"))
@@ -242,6 +243,13 @@ class SCADAIPALHMI(tk.Tk):
             lamp_widget = self.lamp_vars[lamp+"_widget"]
             lamp_widget.config(bg="#4CAF50" if state_on else "#888")
         self.update_manual_buttons()
+        # Update system status indicator lamp
+        if getattr(self, 'emergency_active', False):
+            self.status_indicator.config(text="EMERGENCY", bg="#FF5722", fg="white")
+        elif getattr(self, 'system_running', False):
+            self.status_indicator.config(text="RUNNING", bg="#4CAF50", fg="white")
+        else:
+            self.status_indicator.config(text="STOPPED", bg="#BDBDBD", fg="black")
 
     def sim_loop(self):
         while self.running:
@@ -311,17 +319,17 @@ class SCADAIPALHMI(tk.Tk):
         if getattr(self, 'emergency_active', False):
             alarms.append("[ALARM] Tidak dapat menyalakan sistem saat EMERGENCY aktif!")
             return
-        self.status_label.config(text="SYSTEM RUNNING", foreground="green")
+        self.status_indicator.config(text="RUNNING", bg="#4CAF50", fg="white")
         self.system_running = True
         alarms.append("[LOG] Sistem dijalankan.")
 
     def stop_system(self):
-        self.status_label.config(text="SYSTEM STOPPED", foreground="blue")
+        self.status_indicator.config(text="STOPPED", bg="#BDBDBD", fg="black")
         self.system_running = False
         alarms.append("[LOG] Sistem dihentikan.")
 
     def estop_system(self):
-        self.status_label.config(text="EMERGENCY STOP", foreground="red")
+        self.status_indicator.config(text="EMERGENCY", bg="#FF5722", fg="white")
         self.system_running = False
         self.emergency_active = True
         self.estop_btn.config(text="RESET", command=self.reset_emergency, bg="#1976D2", activebackground="#0D47A1")
@@ -337,7 +345,7 @@ class SCADAIPALHMI(tk.Tk):
 
     def reset_emergency(self):
         self.emergency_active = False
-        self.status_label.config(text="SYSTEM STOPPED", foreground="blue")
+        self.status_indicator.config(text="STOPPED", bg="#BDBDBD", fg="black")
         self.estop_btn.config(text="E-STOP", command=self.estop_system, bg="#FFA000", activebackground="#FF6F00")
         alarms.append("[LOG] Emergency Stop dicabut. Sistem kembali ke posisi STOPPED.")
 
