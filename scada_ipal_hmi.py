@@ -1,3 +1,4 @@
+# Autor: Agung Rambujana 3A-TOI 221364002
 import tkinter as tk
 from tkinter import ttk
 from tkinter import PhotoImage
@@ -177,6 +178,11 @@ class SCADAIPALHMI(tk.Tk):
         demo_frame.pack(fill='x', padx=5, pady=2)
         ttk.Button(demo_frame, text="Normal Operation", command=self.normal_demo).pack(side='left', padx=2)
         ttk.Button(demo_frame, text="Stop Demo", command=self.stop_demo).pack(side='left', padx=2)
+
+        # Informasi tambahan di bawah status bar
+        info_frame = ttk.Frame(self)
+        info_frame.pack(fill='x', padx=5, pady=2)
+        ttk.Label(info_frame, text="SCADA IPAL HMI - Autor: Agung Rambujana 3A-TOI 221364002", font=("Arial", 10, "italic"), foreground="#555").pack(side='left', padx=10)
 
     def update_gui(self):
         # Update komponen
