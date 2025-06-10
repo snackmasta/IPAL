@@ -58,9 +58,43 @@ class SCADAIPALHMI(tk.Tk):
         self.stop_btn.pack(side='left', padx=2)
         self.estop_btn = tk.Button(status_frame, text="E-STOP", command=self.estop_system, bg="#FFA000", fg="white", activebackground="#FF6F00", activeforeground="white", font=("Arial", 10, "bold"))
         self.estop_btn.pack(side='left', padx=2)
-        # self.prod_label = ttk.Label(status_frame, text="Production Rate: 0.0 L/min | Total Produced: 0 L | Efficiency: 0.0%", font=("Arial", 10))
-        # self.prod_label.pack(side='left', padx=20)
-        self.emergency_active = False
+        # Tambahan: Tombol kontrol dan indikator lamp
+        lamp_frame = ttk.LabelFrame(status_frame, text="Indicators & Controls")
+        lamp_frame.pack(side='left', padx=20)
+        # Indikator lampu (ON/OFF)
+        self.lamp_vars = {}
+        lamp_names = ["INLET OK", "TRANSFER OK", "BLOWER OK", "DOSING OK", "LUMPUR OK", "BUANG OK"]
+        for i, name in enumerate(lamp_names):
+            var = tk.StringVar(value="OFF")
+            self.lamp_vars[name] = var
+            lamp = tk.Label(lamp_frame, text=name, width=12, relief="groove", bg="#888", fg="white")
+            lamp.grid(row=0, column=i, padx=2)
+            self.lamp_vars[name+"_widget"] = lamp
+        # Tombol tambahan
+        self.btn_manual = tk.Button(lamp_frame, text="MANUAL", bg="#607D8B", fg="white", width=8, command=self.toggle_manual)
+        self.btn_manual.grid(row=1, column=0, padx=2, pady=2)
+        self.btn_auto = tk.Button(lamp_frame, text="AUTO", bg="#43A047", fg="white", width=8, command=self.toggle_auto)
+        self.btn_auto.grid(row=1, column=1, padx=2, pady=2)
+        self.btn_flush = tk.Button(lamp_frame, text="FLUSH", bg="#0288D1", fg="white", width=8, command=self.flush_action)
+        self.btn_flush.grid(row=1, column=2, padx=2, pady=2)
+        self.btn_alarm = tk.Button(lamp_frame, text="RESET ALARM", bg="#FBC02D", fg="black", width=10, command=self.reset_alarm)
+        self.btn_alarm.grid(row=1, column=3, padx=2, pady=2)
+        # Tombol manual untuk setiap komponen
+        self.manual_pump_btns = {}
+        pumps = ['Inlet', 'Transfer', 'Blower', 'Dosing', 'Lumpur', 'Buang']
+        pump_labels = {
+            'Inlet': 'Pompa Inlet',
+            'Transfer': 'Pompa Transfer',
+            'Blower': 'Pompa Blower',
+            'Dosing': 'Pompa Dosing',
+            'Lumpur': 'Pompa Lumpur',
+            'Buang': 'Pompa Buang',
+        }
+        for i, p in enumerate(pumps):
+            btn = tk.Button(lamp_frame, text=f"{pump_labels[p]}", width=12, bg="#BDBDBD", fg="black", command=lambda k=p: self.toggle_pump_manual(k))
+            btn.grid(row=2, column=i, padx=2, pady=2)
+            self.manual_pump_btns[p] = btn
+        self.update_manual_buttons()
 
         # Main Panel
         main_frame = ttk.Frame(self)
@@ -163,6 +197,9 @@ class SCADAIPALHMI(tk.Tk):
             self.pump_vars['Dosing'].set("ON" if not (PH_MIN <= state['ph'] <= PH_MAX) else "OFF")
             self.pump_vars['Lumpur'].set("ON" if state['lumpur'] > LUMPUR_MAX else "OFF")
             self.pump_vars['Buang'].set("ON" if state['penampung'] > 90 else "OFF")
+        elif state['manual']:
+            # Jangan ubah status pompa jika manual, biarkan tombol manual yang mengatur
+            pass
         else:
             # Jika sistem tidak running atau manual, semua OFF
             for k in self.pump_vars:
@@ -191,6 +228,20 @@ class SCADAIPALHMI(tk.Tk):
         self.ax2.set_ylabel('%')
         self.ax2.legend()
         self.canvas.draw()
+        # Update indikator lamp sesuai status pompa
+        lamp_map = [
+            ("INLET OK", 'Inlet'),
+            ("TRANSFER OK", 'Transfer'),
+            ("BLOWER OK", 'Blower'),
+            ("DOSING OK", 'Dosing'),
+            ("LUMPUR OK", 'Lumpur'),
+            ("BUANG OK", 'Buang'),
+        ]
+        for lamp, pump in lamp_map:
+            state_on = self.pump_vars[pump].get() == "ON"
+            lamp_widget = self.lamp_vars[lamp+"_widget"]
+            lamp_widget.config(bg="#4CAF50" if state_on else "#888")
+        self.update_manual_buttons()
 
     def sim_loop(self):
         while self.running:
@@ -290,9 +341,53 @@ class SCADAIPALHMI(tk.Tk):
         self.estop_btn.config(text="E-STOP", command=self.estop_system, bg="#FFA000", activebackground="#FF6F00")
         alarms.append("[LOG] Emergency Stop dicabut. Sistem kembali ke posisi STOPPED.")
 
+    def toggle_manual(self):
+        state['manual'] = True
+        alarms.append("[LOG] Mode MANUAL diaktifkan.")
+        self.btn_manual.config(relief="sunken")
+        self.btn_auto.config(relief="raised")
+
+    def toggle_auto(self):
+        state['manual'] = False
+        alarms.append("[LOG] Mode AUTO diaktifkan.")
+        self.btn_manual.config(relief="raised")
+        self.btn_auto.config(relief="sunken")
+
+    def flush_action(self):
+        alarms.append("[LOG] FLUSH dijalankan.")
+        # Simulasi flush: reset level bak penampung akhir
+        state['penampung'] = 0
+
+    def reset_alarm(self):
+        alarms.clear()
+        alarms.append("[LOG] Semua alarm direset.")
+
     def on_closing(self):
         self.running = False
         self.destroy()
+
+    def update_manual_buttons(self):
+        # Enable tombol manual jika mode manual, disable jika auto
+        for k, btn in self.manual_pump_btns.items():
+            if state['manual']:
+                btn.config(state="normal", bg="#FFD600" if self.pump_vars[k].get()=="ON" else "#BDBDBD")
+            else:
+                btn.config(state="disabled", bg="#BDBDBD")
+
+    def toggle_pump_manual(self, pump):
+        if not state['manual']:
+            return
+        # Toggle ON/OFF
+        if self.pump_vars[pump].get() == "ON":
+            self.pump_vars[pump].set("OFF")
+            alarms.append(f"[LOG] {pump} dimatikan secara manual.")
+        else:
+            # Matikan semua pompa lain jika ingin hanya satu ON (jika ingin eksklusif)
+            # for k in self.pump_vars:
+            #     self.pump_vars[k].set("OFF")
+            self.pump_vars[pump].set("ON")
+            alarms.append(f"[LOG] {pump} dinyalakan secara manual.")
+        self.update_manual_buttons()
 
 if __name__ == "__main__":
     app = SCADAIPALHMI()
