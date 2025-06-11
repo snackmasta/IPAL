@@ -50,6 +50,9 @@ class SCADAIPALHMI(tk.Tk):
         self.sim_thread.start()
 
     def create_widgets(self):
+        # Author label di atas status bar
+        author_label = tk.Label(self, text="Agung Rambujana 3A-TOI 221364002", font=("Arial", 9, "italic"), anchor="w")
+        author_label.pack(fill='x', padx=5, pady=(5,0))
         # Status Bar
         status_frame = ttk.Frame(self)
         status_frame.pack(fill='x', padx=5, pady=2)
