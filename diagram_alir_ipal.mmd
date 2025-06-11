@@ -1,0 +1,20 @@
+flowchart TD
+    A["Inlet / Saluran Masuk"]
+    B["Bak Penampung Awal"]
+    C["Bak Pemisah Lumpur"]
+    D["Unit Pengolahan Biologis"]
+    E["Bak Pengendapan Akhir"]
+    F["Unit Disinfeksi"]
+    G["Bak Penampung Akhir"]
+    H["Pengolahan Lumpur"]
+    I["Outlet"]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> I
+    E --> H
+    H -- "Lumpur kering" --> I
