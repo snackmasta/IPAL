@@ -40,7 +40,7 @@ class SCADAIPALHMI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("SCADA IPAL - HMI")
-        self.geometry("1100x700")
+        self.geometry("1200x1000")
         self.resizable(False, False)
         self.running = True
         self.create_widgets()
@@ -102,9 +102,20 @@ class SCADAIPALHMI(tk.Tk):
         main_frame = ttk.Frame(self)
         main_frame.pack(fill='both', expand=True, padx=5, pady=2)
 
+        # Diagram Proses (gambar) - Diperbesar dan dipindah ke kiri
+        diagram_frame = ttk.LabelFrame(main_frame, text="Diagram Proses", width=600)
+        diagram_frame.grid(row=0, column=0, rowspan=3, sticky='nsew', padx=5, pady=5)
+        main_frame.grid_rowconfigure(0, weight=2)
+        main_frame.grid_columnconfigure(0, weight=2)
+        try:
+            self.diagram_img = PhotoImage(file="diagram_ipal.png")
+            tk.Label(diagram_frame, image=self.diagram_img).pack(expand=True, fill='both')
+        except Exception:
+            tk.Label(diagram_frame, text="(Tambahkan diagram_ipal.png)").pack(expand=True, fill='both')
+
         # Komponen Panel
         comp_frame = ttk.LabelFrame(main_frame, text="Components", width=200)
-        comp_frame.grid(row=0, column=0, sticky='nw', padx=5, pady=5)
+        comp_frame.grid(row=0, column=1, sticky='nw', padx=5, pady=5)
         self.pump_vars = {}
         pumps = ['Inlet', 'Transfer', 'Blower', 'Dosing', 'Lumpur', 'Buang']
         pump_labels = {
@@ -127,15 +138,9 @@ class SCADAIPALHMI(tk.Tk):
         self.eff_tank = ttk.Progressbar(comp_frame, length=100, maximum=100)
         self.eff_tank.grid(row=8, column=1, sticky='w')
 
-        # Alarm Panel
-        alarm_frame = ttk.LabelFrame(main_frame, text="System Alarms", width=200)
-        alarm_frame.grid(row=0, column=1, sticky='nw', padx=5, pady=5)
-        self.alarm_box = tk.Text(alarm_frame, height=10, width=30, bg='#fff0f0', fg='red')
-        self.alarm_box.pack()
-
         # Data Proses Panel
         data_frame = ttk.LabelFrame(main_frame, text="Process Data", width=200)
-        data_frame.grid(row=0, column=2, sticky='nw', padx=5, pady=5)
+        data_frame.grid(row=1, column=1, sticky='nw', padx=5, pady=5)
         self.data_vars = {}
         data_labels = [
             ('level', 'Level Bak Penampung Awal'),
@@ -153,23 +158,20 @@ class SCADAIPALHMI(tk.Tk):
             ttk.Label(data_frame, textvariable=var, width=10, background='#f0f0f0').grid(row=i, column=1, sticky='w')
             self.data_vars[k] = var
 
-        # Diagram Proses (gambar)
-        diagram_frame = ttk.LabelFrame(main_frame, text="Diagram Proses", width=300)
-        diagram_frame.grid(row=0, column=3, sticky='nw', padx=5, pady=5)
-        try:
-            self.diagram_img = PhotoImage(file="diagram_ipal.png")
-            tk.Label(diagram_frame, image=self.diagram_img).pack()
-        except Exception:
-            tk.Label(diagram_frame, text="(Tambahkan diagram_ipal.png)").pack()
+        # Alarm Panel
+        alarm_frame = ttk.LabelFrame(main_frame, text="System Alarms", width=200)
+        alarm_frame.grid(row=2, column=1, sticky='nw', padx=5, pady=5)
+        self.alarm_box = tk.Text(alarm_frame, height=10, width=30, bg='#fff0f0', fg='red')
+        self.alarm_box.pack()
 
         # Grafik Tren
         trend_frame = ttk.LabelFrame(self, text="Real-Time Trends")
-        trend_frame.pack(fill='x', padx=5, pady=2)
-        self.fig = Figure(figsize=(7,2.5), dpi=100)
+        trend_frame.pack(fill='both', expand=True, padx=5, pady=2)
+        self.fig = Figure(figsize=(12,6), dpi=100)
         self.ax1 = self.fig.add_subplot(121)
         self.ax2 = self.fig.add_subplot(122)
         self.canvas = FigureCanvasTkAgg(self.fig, master=trend_frame)
-        self.canvas.get_tk_widget().pack()
+        self.canvas.get_tk_widget().pack(fill='both', expand=True)
         self.trend_data = {'level': [], 'penampung': [], 'time': []}
         self.t0 = time.time()
 
