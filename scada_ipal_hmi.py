@@ -42,6 +42,7 @@ class SCADAIPALHMI(tk.Tk):
         self.title("SCADA IPAL - HMI")
         self.geometry("1200x1000")
         self.resizable(False, False)
+        self.configure(bg="#23272E")  # Dark background
         self.running = True
         self.create_widgets()
         self.sim_thread = threading.Thread(target=self.sim_loop, daemon=True)
@@ -51,35 +52,37 @@ class SCADAIPALHMI(tk.Tk):
         # Status Bar
         status_frame = ttk.Frame(self)
         status_frame.pack(fill='x', padx=5, pady=2)
+        status_frame.configure(style="Dark.TFrame")
         # Indicator Lamp for System Status
-        self.status_indicator = tk.Label(status_frame, text="STOPPED", font=("Arial", 14, "bold"), width=12, relief="groove", bg="#BDBDBD", fg="black")
+        self.status_indicator = tk.Label(status_frame, text="STOPPED", font=("Arial", 14, "bold"), width=12, relief="groove", bg="#444950", fg="#E0E0E0")
         self.status_indicator.pack(side='left', padx=10, pady=2)
-        self.start_btn = tk.Button(status_frame, text="START", command=self.start_system, bg="#4CAF50", fg="white", activebackground="#388E3C", activeforeground="white", font=("Arial", 10, "bold"))
+        self.start_btn = tk.Button(status_frame, text="START", command=self.start_system, bg="#388E3C", fg="#E0E0E0", activebackground="#2E7D32", activeforeground="#FFF", font=("Arial", 10, "bold"))
         self.start_btn.pack(side='left', padx=2)
-        self.stop_btn = tk.Button(status_frame, text="STOP", command=self.stop_system, bg="#E53935", fg="white", activebackground="#B71C1C", activeforeground="white", font=("Arial", 10, "bold"))
+        self.stop_btn = tk.Button(status_frame, text="STOP", command=self.stop_system, bg="#B71C1C", fg="#E0E0E0", activebackground="#8A1313", activeforeground="#FFF", font=("Arial", 10, "bold"))
         self.stop_btn.pack(side='left', padx=2)
-        self.estop_btn = tk.Button(status_frame, text="E-STOP", command=self.estop_system, bg="#FFA000", fg="white", activebackground="#FF6F00", activeforeground="white", font=("Arial", 10, "bold"))
+        self.estop_btn = tk.Button(status_frame, text="E-STOP", command=self.estop_system, bg="#FF8C00", fg="#23272E", activebackground="#FF6F00", activeforeground="#FFF", font=("Arial", 10, "bold"))
         self.estop_btn.pack(side='left', padx=2)
         # Tambahan: Tombol kontrol dan indikator lamp
         lamp_frame = ttk.LabelFrame(status_frame, text="Indicators & Controls")
         lamp_frame.pack(side='left', padx=20)
+        lamp_frame.configure(style="Dark.TLabelframe")
         # Indikator lampu (ON/OFF)
         self.lamp_vars = {}
         lamp_names = ["INLET OK", "TRANSFER OK", "BLOWER OK", "DOSING OK", "LUMPUR OK", "BUANG OK"]
         for i, name in enumerate(lamp_names):
             var = tk.StringVar(value="OFF")
             self.lamp_vars[name] = var
-            lamp = tk.Label(lamp_frame, text=name, width=12, relief="groove", bg="#888", fg="white")
+            lamp = tk.Label(lamp_frame, text=name, width=12, relief="groove", bg="#333", fg="#E0E0E0")
             lamp.grid(row=0, column=i, padx=2)
             self.lamp_vars[name+"_widget"] = lamp
         # Tombol tambahan
-        self.btn_manual = tk.Button(lamp_frame, text="MANUAL", bg="#607D8B", fg="white", width=8, command=self.toggle_manual)
+        self.btn_manual = tk.Button(lamp_frame, text="MANUAL", bg="#374151", fg="#E0E0E0", width=8, command=self.toggle_manual, activebackground="#23272E")
         self.btn_manual.grid(row=1, column=0, padx=2, pady=2)
-        self.btn_auto = tk.Button(lamp_frame, text="AUTO", bg="#43A047", fg="white", width=8, command=self.toggle_auto)
+        self.btn_auto = tk.Button(lamp_frame, text="AUTO", bg="#2E7D32", fg="#E0E0E0", width=8, command=self.toggle_auto, activebackground="#23272E")
         self.btn_auto.grid(row=1, column=1, padx=2, pady=2)
-        self.btn_flush = tk.Button(lamp_frame, text="FLUSH", bg="#0288D1", fg="white", width=8, command=self.flush_action)
+        self.btn_flush = tk.Button(lamp_frame, text="FLUSH", bg="#1976D2", fg="#E0E0E0", width=8, command=self.flush_action, activebackground="#23272E")
         self.btn_flush.grid(row=1, column=2, padx=2, pady=2)
-        self.btn_alarm = tk.Button(lamp_frame, text="RESET ALARM", bg="#FBC02D", fg="black", width=10, command=self.reset_alarm)
+        self.btn_alarm = tk.Button(lamp_frame, text="RESET ALARM", bg="#FBC02D", fg="#23272E", width=10, command=self.reset_alarm, activebackground="#23272E")
         self.btn_alarm.grid(row=1, column=3, padx=2, pady=2)
         # Tombol manual untuk setiap komponen
         self.manual_pump_btns = {}
@@ -93,7 +96,7 @@ class SCADAIPALHMI(tk.Tk):
             'Buang': 'Pompa Buang',
         }
         for i, p in enumerate(pumps):
-            btn = tk.Button(lamp_frame, text=f"{pump_labels[p]}", width=12, bg="#BDBDBD", fg="black", command=lambda k=p: self.toggle_pump_manual(k))
+            btn = tk.Button(lamp_frame, text=f"{pump_labels[p]}", width=12, bg="#444950", fg="#E0E0E0", command=lambda k=p: self.toggle_pump_manual(k), activebackground="#23272E")
             btn.grid(row=2, column=i, padx=2, pady=2)
             self.manual_pump_btns[p] = btn
         self.update_manual_buttons()
@@ -101,21 +104,24 @@ class SCADAIPALHMI(tk.Tk):
         # Main Panel
         main_frame = ttk.Frame(self)
         main_frame.pack(fill='both', expand=True, padx=5, pady=2)
+        main_frame.configure(style="Dark.TFrame")
 
         # Diagram Proses (gambar) - Diperbesar dan dipindah ke kiri
         diagram_frame = ttk.LabelFrame(main_frame, text="Diagram Proses", width=600)
         diagram_frame.grid(row=0, column=0, rowspan=3, sticky='nsew', padx=5, pady=5)
+        diagram_frame.configure(style="Dark.TLabelframe")
         main_frame.grid_rowconfigure(0, weight=2)
         main_frame.grid_columnconfigure(0, weight=2)
         try:
             self.diagram_img = PhotoImage(file="diagram_ipal.png")
-            tk.Label(diagram_frame, image=self.diagram_img).pack(expand=True, fill='both')
+            tk.Label(diagram_frame, image=self.diagram_img, bg="#23272E").pack(expand=True, fill='both')
         except Exception:
-            tk.Label(diagram_frame, text="(Tambahkan diagram_ipal.png)").pack(expand=True, fill='both')
+            tk.Label(diagram_frame, text="(Tambahkan diagram_ipal.png)", bg="#23272E", fg="#E0E0E0").pack(expand=True, fill='both')
 
         # Komponen Panel
         comp_frame = ttk.LabelFrame(main_frame, text="Components", width=200)
         comp_frame.grid(row=0, column=1, sticky='nw', padx=5, pady=5)
+        comp_frame.configure(style="Dark.TLabelframe")
         self.pump_vars = {}
         pumps = ['Inlet', 'Transfer', 'Blower', 'Dosing', 'Lumpur', 'Buang']
         pump_labels = {
@@ -129,18 +135,19 @@ class SCADAIPALHMI(tk.Tk):
         for i, p in enumerate(pumps):
             var = tk.StringVar(value="OFF")
             self.pump_vars[p] = var
-            ttk.Label(comp_frame, text=f"{pump_labels[p]}:").grid(row=i, column=0, sticky='e')
-            ttk.Label(comp_frame, textvariable=var, width=6, background='#e0e0e0').grid(row=i, column=1, sticky='w')
-        ttk.Label(comp_frame, text="Bak Penampung Awal:").grid(row=7, column=0, sticky='e')
-        self.ground_tank = ttk.Progressbar(comp_frame, length=100, maximum=100)
+            ttk.Label(comp_frame, text=f"{pump_labels[p]}:", style="Dark.TLabel").grid(row=i, column=0, sticky='e')
+            ttk.Label(comp_frame, textvariable=var, width=6, background='#333', foreground="#E0E0E0", style="Dark.TLabel").grid(row=i, column=1, sticky='w')
+        ttk.Label(comp_frame, text="Bak Penampung Awal:", style="Dark.TLabel").grid(row=7, column=0, sticky='e')
+        self.ground_tank = ttk.Progressbar(comp_frame, length=100, maximum=100, style="Dark.Horizontal.TProgressbar")
         self.ground_tank.grid(row=7, column=1, sticky='w')
-        ttk.Label(comp_frame, text="Bak Akhir:").grid(row=8, column=0, sticky='e')
-        self.eff_tank = ttk.Progressbar(comp_frame, length=100, maximum=100)
+        ttk.Label(comp_frame, text="Bak Akhir:", style="Dark.TLabel").grid(row=8, column=0, sticky='e')
+        self.eff_tank = ttk.Progressbar(comp_frame, length=100, maximum=100, style="Dark.Horizontal.TProgressbar")
         self.eff_tank.grid(row=8, column=1, sticky='w')
 
         # Data Proses Panel
         data_frame = ttk.LabelFrame(main_frame, text="Process Data", width=200)
         data_frame.grid(row=1, column=1, sticky='nw', padx=5, pady=5)
+        data_frame.configure(style="Dark.TLabelframe")
         self.data_vars = {}
         data_labels = [
             ('level', 'Level Bak Penampung Awal'),
@@ -153,23 +160,25 @@ class SCADAIPALHMI(tk.Tk):
             ('penampung', 'Level Bak Akhir'),
         ]
         for i, (k, label) in enumerate(data_labels):
-            ttk.Label(data_frame, text=label+':').grid(row=i, column=0, sticky='e')
+            ttk.Label(data_frame, text=label+':', style="Dark.TLabel").grid(row=i, column=0, sticky='e')
             var = tk.StringVar()
-            ttk.Label(data_frame, textvariable=var, width=10, background='#f0f0f0').grid(row=i, column=1, sticky='w')
+            ttk.Label(data_frame, textvariable=var, width=10, background='#333', foreground="#E0E0E0", style="Dark.TLabel").grid(row=i, column=1, sticky='w')
             self.data_vars[k] = var
 
         # Alarm Panel
         alarm_frame = ttk.LabelFrame(main_frame, text="System Alarms", width=200)
         alarm_frame.grid(row=2, column=1, sticky='nw', padx=5, pady=5)
-        self.alarm_box = tk.Text(alarm_frame, height=10, width=30, bg='#fff0f0', fg='red')
+        alarm_frame.configure(style="Dark.TLabelframe")
+        self.alarm_box = tk.Text(alarm_frame, height=10, width=30, bg='#2D2323', fg='#FF5252')
         self.alarm_box.pack()
 
         # Grafik Tren
         trend_frame = ttk.LabelFrame(self, text="Real-Time Trends")
         trend_frame.pack(fill='both', expand=True, padx=5, pady=2)
-        self.fig = Figure(figsize=(12,6), dpi=100)
-        self.ax1 = self.fig.add_subplot(121)
-        self.ax2 = self.fig.add_subplot(122)
+        trend_frame.configure(style="Dark.TLabelframe")
+        self.fig = Figure(figsize=(12,6), dpi=100, facecolor="#23272E")
+        self.ax1 = self.fig.add_subplot(121, facecolor="#23272E")
+        self.ax2 = self.fig.add_subplot(122, facecolor="#23272E")
         self.canvas = FigureCanvasTkAgg(self.fig, master=trend_frame)
         self.canvas.get_tk_widget().pack(fill='both', expand=True)
         self.trend_data = {'level': [], 'penampung': [], 'time': []}
@@ -178,13 +187,24 @@ class SCADAIPALHMI(tk.Tk):
         # Demo Controls
         demo_frame = ttk.Frame(self)
         demo_frame.pack(fill='x', padx=5, pady=2)
-        ttk.Button(demo_frame, text="Normal Operation", command=self.normal_demo).pack(side='left', padx=2)
-        ttk.Button(demo_frame, text="Stop Demo", command=self.stop_demo).pack(side='left', padx=2)
+        demo_frame.configure(style="Dark.TFrame")
+        ttk.Button(demo_frame, text="Normal Operation", command=self.normal_demo, style="Dark.TButton").pack(side='left', padx=2)
+        ttk.Button(demo_frame, text="Stop Demo", command=self.stop_demo, style="Dark.TButton").pack(side='left', padx=2)
 
         # Informasi tambahan di bawah status bar
         info_frame = ttk.Frame(self)
         info_frame.pack(fill='x', padx=5, pady=2)
-        ttk.Label(info_frame, text="SCADA IPAL HMI - Autor: Agung Rambujana 3A-TOI 221364002", font=("Arial", 10, "italic"), foreground="#555").pack(side='left', padx=10)
+        info_frame.configure(style="Dark.TFrame")
+        ttk.Label(info_frame, text="SCADA IPAL HMI - Autor: Agung Rambujana 3A-TOI 221364002", font=("Arial", 10, "italic"), foreground="#BBB", style="Dark.TLabel").pack(side='left', padx=10)
+
+        # Style untuk dark mode
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure("Dark.TFrame", background="#23272E")
+        style.configure("Dark.TLabelframe", background="#23272E", foreground="#E0E0E0")
+        style.configure("Dark.TLabel", background="#23272E", foreground="#E0E0E0")
+        style.configure("Dark.TButton", background="#374151", foreground="#E0E0E0")
+        style.configure("Dark.Horizontal.TProgressbar", troughcolor="#23272E", background="#388E3C", bordercolor="#23272E", lightcolor="#388E3C", darkcolor="#23272E")
 
     def update_gui(self):
         # Update komponen
@@ -226,16 +246,22 @@ class SCADAIPALHMI(tk.Tk):
             for k in self.trend_data:
                 self.trend_data[k] = self.trend_data[k][-50:]
         self.ax1.clear()
-        self.ax1.plot(self.trend_data['time'], self.trend_data['level'], label='Level Bak Penampung')
-        self.ax1.plot(self.trend_data['time'], self.trend_data['penampung'], label='Bak Akhir')
-        self.ax1.set_title('Tank Levels')
-        self.ax1.set_ylabel('%')
-        self.ax1.legend()
+        self.ax1.set_facecolor("#23272E")
+        self.ax1.plot(self.trend_data['time'], self.trend_data['level'], label='Level Bak Penampung', color="#4FC3F7")
+        self.ax1.plot(self.trend_data['time'], self.trend_data['penampung'], label='Bak Akhir', color="#81C784")
+        self.ax1.set_title('Tank Levels', color="#E0E0E0")
+        self.ax1.set_ylabel('%', color="#E0E0E0")
+        self.ax1.legend(facecolor="#23272E", edgecolor="#E0E0E0", labelcolor="#E0E0E0")
+        self.ax1.tick_params(axis='x', colors="#E0E0E0")
+        self.ax1.tick_params(axis='y', colors="#E0E0E0")
         self.ax2.clear()
-        self.ax2.plot(self.trend_data['time'], self.trend_data['level'], label='Level Bak Penampung')
-        self.ax2.set_title('Level Bak Penampung')
-        self.ax2.set_ylabel('%')
-        self.ax2.legend()
+        self.ax2.set_facecolor("#23272E")
+        self.ax2.plot(self.trend_data['time'], self.trend_data['level'], label='Level Bak Penampung', color="#4FC3F7")
+        self.ax2.set_title('Level Bak Penampung', color="#E0E0E0")
+        self.ax2.set_ylabel('%', color="#E0E0E0")
+        self.ax2.legend(facecolor="#23272E", edgecolor="#E0E0E0", labelcolor="#E0E0E0")
+        self.ax2.tick_params(axis='x', colors="#E0E0E0")
+        self.ax2.tick_params(axis='y', colors="#E0E0E0")
         self.canvas.draw()
         # Update indikator lamp sesuai status pompa
         lamp_map = [
@@ -249,15 +275,15 @@ class SCADAIPALHMI(tk.Tk):
         for lamp, pump in lamp_map:
             state_on = self.pump_vars[pump].get() == "ON"
             lamp_widget = self.lamp_vars[lamp+"_widget"]
-            lamp_widget.config(bg="#4CAF50" if state_on else "#888")
+            lamp_widget.config(bg="#43A047" if state_on else "#333", fg="#E0E0E0")
         self.update_manual_buttons()
         # Update system status indicator lamp
         if getattr(self, 'emergency_active', False):
-            self.status_indicator.config(text="EMERGENCY", bg="#FF5722", fg="white")
+            self.status_indicator.config(text="EMERGENCY", bg="#FF5722", fg="#FFF")
         elif getattr(self, 'system_running', False):
-            self.status_indicator.config(text="RUNNING", bg="#4CAF50", fg="white")
+            self.status_indicator.config(text="RUNNING", bg="#388E3C", fg="#FFF")
         else:
-            self.status_indicator.config(text="STOPPED", bg="#BDBDBD", fg="black")
+            self.status_indicator.config(text="STOPPED", bg="#444950", fg="#E0E0E0")
 
     def sim_loop(self):
         while self.running:
@@ -327,17 +353,17 @@ class SCADAIPALHMI(tk.Tk):
         if getattr(self, 'emergency_active', False):
             alarms.append("[ALARM] Tidak dapat menyalakan sistem saat EMERGENCY aktif!")
             return
-        self.status_indicator.config(text="RUNNING", bg="#4CAF50", fg="white")
+        self.status_indicator.config(text="RUNNING", bg="#388E3C", fg="#FFF")
         self.system_running = True
         alarms.append("[LOG] Sistem dijalankan.")
 
     def stop_system(self):
-        self.status_indicator.config(text="STOPPED", bg="#BDBDBD", fg="black")
+        self.status_indicator.config(text="STOPPED", bg="#444950", fg="#E0E0E0")
         self.system_running = False
         alarms.append("[LOG] Sistem dihentikan.")
 
     def estop_system(self):
-        self.status_indicator.config(text="EMERGENCY", bg="#FF5722", fg="white")
+        self.status_indicator.config(text="EMERGENCY", bg="#FF5722", fg="#FFF")
         self.system_running = False
         self.emergency_active = True
         self.estop_btn.config(text="RESET", command=self.reset_emergency, bg="#1976D2", activebackground="#0D47A1")
@@ -353,8 +379,8 @@ class SCADAIPALHMI(tk.Tk):
 
     def reset_emergency(self):
         self.emergency_active = False
-        self.status_indicator.config(text="STOPPED", bg="#BDBDBD", fg="black")
-        self.estop_btn.config(text="E-STOP", command=self.estop_system, bg="#FFA000", activebackground="#FF6F00")
+        self.status_indicator.config(text="STOPPED", bg="#444950", fg="#E0E0E0")
+        self.estop_btn.config(text="E-STOP", command=self.estop_system, bg="#FF8C00", activebackground="#FF6F00")
         alarms.append("[LOG] Emergency Stop dicabut. Sistem kembali ke posisi STOPPED.")
 
     def toggle_manual(self):
@@ -386,9 +412,9 @@ class SCADAIPALHMI(tk.Tk):
         # Enable tombol manual jika mode manual, disable jika auto
         for k, btn in self.manual_pump_btns.items():
             if state['manual']:
-                btn.config(state="normal", bg="#FFD600" if self.pump_vars[k].get()=="ON" else "#BDBDBD")
+                btn.config(state="normal", bg="#FFD600" if self.pump_vars[k].get()=="ON" else "#444950", fg="#23272E" if self.pump_vars[k].get()=="ON" else "#E0E0E0")
             else:
-                btn.config(state="disabled", bg="#BDBDBD")
+                btn.config(state="disabled", bg="#444950", fg="#E0E0E0")
 
     def toggle_pump_manual(self, pump):
         if not state['manual']:
